@@ -1,0 +1,77 @@
+# Part B Q3
+# Clear Memory & Set Data File Path
+
+Put the path of the customer_churn file folder as argument for setwd("customer_churn file folder path")
+
+```{r}
+rm(list = ls(all.names = TRUE)); gc();
+setwd("D:/uOttawa/First Semister/Fundamentals and Applied Data Science/Assignment 1/Assignment 1")
+```
+# Load customer_churn.csv file Data in DataFrame
+
+Load customer_churn.csv file Data in DataFrame.
+
+```{r}
+# Specify the path to your CSV file
+csv_file_path <- "customer_churn.csv"
+# Load the data from the CSV file into a data frame
+customer_churn_data <- read.csv(csv_file_path)
+```
+# Explore customer_churn data
+
+```{r}
+head(customer_churn_data)
+```
+
+```{r}
+str(customer_churn_data)
+```
+# Build Total Revenue Cube
+that it's dimensions are
+• offer type            (Offer)
+• internet service type (Internet.Type)
+• contract duration     (Contract)
+• customer Status       (Customer.Status)
+so we can apply cube operations regarding those attributes perform adhoc quires.
+
+```{r}
+Total.Revenue_cube <- 
+  tapply(customer_churn_data$Total.Revenue, 
+         customer_churn_data[,c("Offer", "Internet.Type", "Contract", "Customer.Status")], 
+         FUN=function(x){return(sum(x))})
+```
+# a)
+## ROLLUP Total Revenue Cube & Collapse Customer Status Dimension
+to aggregate revenue across different customer status in the cube
+
+```{r}
+Summarized_Total.Revenue_cube <-
+  apply(Total.Revenue_cube, c("Offer", "Internet.Type", "Contract"),
+      FUN=function(x) {return(sum(x, na.rm=TRUE))})
+```
+## Show The total revenue contribution
+from a Two Year contract for each Offer by internet type by Cube Slice operation
+
+```{r}
+Total.Rev.2yr_cont.per.off <- Summarized_Total.Revenue_cube[,,"Two Year"]
+print(Total.Rev.2yr_cont.per.off)
+```
+# b)
+## Calculate Total Revenue From Offer B customers
+
+```{r}
+Offer.B_Total.Revenue <- sum(Summarized_Total.Revenue_cube["Offer B",,])
+```
+## Calculate Total Revenue From Offer B churned customers 
+that accepted Month-to-Month Contract for Cable internet service type
+
+```{r}
+Offer.B_churn_mon.to.mon_cable_Total.Revenue <- sum(Total.Revenue_cube["Offer B","Cable","Month-to-Month","Churned"])
+```
+## Calculate Total Revenue Precentage (for Offer B)
+contributed by churned customers that accepted a Month-to-Month contract for Cable service
+
+```{r}
+total_rev_precent = Offer.B_churn_mon.to.mon_cable_Total.Revenue / Offer.B_Total.Revenue * 100
+print(paste(total_rev_precent,"%"))
+```

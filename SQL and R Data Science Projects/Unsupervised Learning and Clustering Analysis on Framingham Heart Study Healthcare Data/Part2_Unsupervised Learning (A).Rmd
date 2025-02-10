@@ -1,0 +1,156 @@
+# Clear Memory & Set Data File Path
+Put the path of the customer_churn file folder as argument for setwd("customer_churn file folder path").
+
+```{r}
+rm(list = ls(all.names = TRUE)); gc();
+setwd("D:/OneDrive - University of Ottawa/Desktop/Assignment 2/")
+```
+
+# Import Required Libraries
+```{r}
+library(ggplot2)
+library(cluster)
+library(factoextra)
+```
+
+# Load & Prepare the Data for Clustering
+## Load framingham.csv file Data in DataFrame
+Load framingham.csv file Data in DataFrame.
+
+```{r}
+# Specify the name to your CSV file
+csv_file_name <- "framingham.csv"
+# Load the data from the CSV file into a data frame
+framingham_data <- read.csv(csv_file_name)
+```
+## Explore framingham data
+
+```{r}
+head(framingham_data)
+```
+
+```{r}
+str(framingham_data)
+```
+## Extract the Sex and Age Columns from Framingham Data
+& Save them in a separate Dataframe.<br>
+
+```{r}
+clustering_data <- data.frame(sex = framingham_data$male, age = framingham_data$age)
+```
+## Explore Resulted sex & age Dataframe
+
+```{r}
+head(clustering_data)
+```
+
+```{r}
+str(clustering_data)
+```
+
+Show Summary of sex & age values
+```{r}
+summary(clustering_data)
+```
+
+```{r}
+print("sex values counts:")
+table(clustering_data$sex)
+```
+
+```{r}
+print("age values counts:")
+table(clustering_data$age)
+```
+
+## Standardize the age column in clustering_data
+```{r}
+clustering_data$age <- scale(clustering_data$age)
+```
+
+```{r}
+head(clustering_data)
+```
+
+```{r}
+summary(clustering_data)
+```
+
+```{r}
+print("age values counts:")
+table(clustering_data$age)
+```
+
+
+# A)
+## 1- K‐means clustering of Data
+at K = 4
+### Clustering
+nstart is set to 20 to try running kmeans with k differnet intial clusters' centriods<br>
+& bring the 1 with best Performance
+
+```{r}
+k <- 4
+set.seed(777)
+clustering.K.4 <- kmeans(clustering_data, centers = k, nstart = 20)
+clustering.K.4
+```
+
+### Plot
+#### Plot Data Points Colored by Cluster
+```{r}
+# Copy Data so we can change data type of sex into factor for visualiztion purposes
+# without affecting actual data as clusters visualiztion by fviz() requires features to be numeric 
+clustering_data_copy <- data.frame(clustering_data)
+# Convert sex variable to factor with labels
+clustering_data_copy$sex <- factor(clustering_data_copy$sex, levels = c(0, 1), labels = c("female", "male"))
+# Add cluster labels to the clustering_data dataframe
+clustering_data_copy$cluster <- as.factor(clustering.K.4$cluster)
+# Plot the clusters
+
+ggplot(clustering_data_copy, aes(x = sex, y = age, color = clustering_data_copy$cluster)) +
+  geom_point(size = 4, alpha = 0.7) +
+  labs(title = "K-means Clustering Results",
+       x = "Sex", y = "Age (Standardized)") +
+  scale_color_manual(name = "Cluster", values = c("red", "blue", "green", "purple")) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+#### Plot Clusters 
+```{r}
+fviz_cluster(clustering.K.4, data = clustering_data,
+             geom = "point",
+             ellipse.type = "convex",
+             stand = FALSE,
+             ggtheme = theme_bw())
+```
+
+## 2- Apply the elbow method to determine the best k & plot
+it's shown in Elbow Plot that Best K = 5
+
+```{r}
+fviz_nbclust(clustering_data, kmeans, method = "wss")
+k <- 5
+wss_score <- kmeans(clustering_data, centers = k)$tot.withinss
+print("Total Within-Cluster Sum of Squares at Best (K = 5): ")
+print(wss_score)
+```
+
+## 3- Evaluate the quality of the clusters using the Silhouette Coefficient method
+it's shown in Silhouette Plot that Best K = 9 which results highest Silhouette Coefficient
+
+```{r}
+plot <- fviz_nbclust(clustering_data, kmeans, method='silhouette')
+# Modify the plot to show all y-values precisely
+plot +
+  scale_y_continuous(limits = c(0, 0.6), breaks = seq(0, 0.6, by = 0.1))
+k <- 9
+dist_matrix <- dist(clustering_data)
+clustering.K.9 <- kmeans(clustering_data, centers = k)
+silhouette_results <- silhouette(clustering.K.9$cluster, dist(clustering_data))
+print("Average Silhouette Coefficient at Best (K = 9): ")
+print(summary(silhouette_results)$avg.width)
+```
+
+
